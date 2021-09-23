@@ -1,0 +1,4 @@
+# usage
+```
+cargo run -- 'expression'
+```
