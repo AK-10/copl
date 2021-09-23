@@ -1,4 +1,0 @@
-(executable
- (public_name compare_nat)
- (name main)
- (libraries mylib))
