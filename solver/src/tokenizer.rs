@@ -21,7 +21,6 @@ pub enum Operator {
 
 #[derive(Debug)]
 pub enum Token {
-    EvalTo,
     Int(usize),
     Bool(bool),
     Op(Operator),
@@ -30,106 +29,72 @@ pub enum Token {
     Else
 }
 
-pub struct Tokenizer<'a> {
-    input: &'a [u8],
-    pos: usize
+pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
+    match chars {
+        [first, rest @ ..] if first.is_ascii_whitespace() => tokenize(rest),
+        [b'1'..=b'9', _rest @ ..] => {
+            let (num, rest) = get_num(chars);
+            Ok(new_token(Token::Int(num), rest)?)
+        }
+        [b'i', b'f', rest @ ..] => {
+            Ok(new_token(Token::If, rest)?)
+        }
+        [b't', b'h', b'e', b'n', rest @ ..] => {
+            Ok(new_token(Token::Then, rest)?)
+        }
+        [b'e', b'l', b's', b'e', rest @ ..] => {
+            Ok(new_token(Token::Else, rest)?)
+        }
+        [b't', b'r', b'u', b'e', rest @ ..] => {
+            Ok(new_token(Token::Bool(true), rest)?)
+        }
+        [b'f', b'a', b'l', b's', b'e', rest @ ..] => {
+            Ok(new_token(Token::Bool(false), rest)?)
+        }
+        [b'+', rest @ ..] => {
+            Ok(new_token(Token::Op(Operator::Plus), rest)?)
+        }
+        [b'-', rest @ ..] => {
+            Ok(new_token(Token::Op(Operator::Minus), rest)?)
+        }
+        [b'*', rest @ ..] => {
+            Ok(new_token(Token::Op(Operator::Mul), rest)?)
+        }
+        [b'<', rest @ ..] => {
+            Ok(new_token(Token::Op(Operator::LessThan), rest)?)
+        }
+        [] => Ok(Vec::new()),
+        x => Err(anyhow::anyhow!("unexpected token: {:?}", str::from_utf8(x).unwrap()))
+    }
 }
 
-impl<'a> Tokenizer<'a> {
-    pub fn new(input: &'a [u8]) -> Self {
-        Tokenizer {
-            input,
-            pos: 0
+fn new_token(token: Token, chars: &[u8]) -> anyhow::Result<Vec<Token>> {
+    let mut tokens = vec![token];
+    tokens.append(&mut tokenize(chars)?);
+
+    Ok(tokens)
+}
+
+fn get_num(chars: &[u8]) -> (usize, &[u8]) {
+    let (num_str, rest) = get_num_str(chars);
+    let num = str::from_utf8(&num_str)
+        .expect("invalid utf8 number")
+        .to_string()
+        .parse::<usize>()
+        .unwrap();
+
+    (num, rest)
+}
+
+fn get_num_str(chars: &[u8]) -> (Vec<u8>, &[u8]) {
+    match chars {
+        [first @ b'0'..=b'9', rest @ ..] => {
+            let mut num = vec![*first];
+            let (mut rest_num, rest) = get_num_str(rest);
+            num.append(&mut rest_num);
+
+            (num, rest)
         }
-    }
-
-    pub fn tokenize(&mut self) -> anyhow::Result<Vec<Token>> {
-        let mut tokens = Vec::new();
-        while self.pos < self.input.len() {
-            if self.current_sub_string().starts_with("evalto".as_bytes()) {
-                tokens.push(Token::EvalTo);
-                self.next(6);
-                continue
-            }
-            if self.current_sub_string().starts_with("if".as_bytes()) {
-                tokens.push(Token::If);
-                self.next(2);
-                continue
-            }
-            if self.current_sub_string().starts_with("then".as_bytes()) {
-                tokens.push(Token::Then);
-                self.next(4);
-                continue
-            }
-            if self.current_sub_string().starts_with("else".as_bytes()) {
-                tokens.push(Token::Else);
-                self.next(4);
-                continue
-            }
-            if self.current_sub_string().starts_with("true".as_bytes()) {
-                tokens.push(Token::Bool(true));
-                self.next(4);
-                continue
-            }
-            if self.current_sub_string().starts_with("false".as_bytes()) {
-                tokens.push(Token::Bool(false));
-                self.next(5);
-                continue
-            }
-            if self.current().map(|x| x.is_ascii_whitespace()).unwrap_or(false) {
-                self.next(1);
-                continue
-            }
-            match self.input[self.pos] {
-                b'1'..=b'9' => {
-                    tokens.push(Token::Int(self.get_num()))
-                }
-                b'+' => {
-                    tokens.push(Token::Op(Operator::Plus));
-                    self.next(1);
-                }
-                b'-' => {
-                    tokens.push(Token::Op(Operator::Minus));
-                    self.next(1);
-                }
-                b'*' => {
-                    tokens.push(Token::Op(Operator::Mul));
-                    self.next(1);
-                }
-                b'<' => {
-                    tokens.push(Token::Op(Operator::LessThan));
-                    self.next(1);
-                }
-                x => {
-                    println!("tokens: {:?}", tokens);
-                    return Err(anyhow::anyhow!("unexpected char: {}, pos: {}", x as char, self.pos))
-                }
-            }
-
-        }
-        Ok(tokens)
-    }
-
-    fn next(&mut self, step: usize) {
-        self.pos += step;
-    }
-
-    fn current(&self) -> Option<&u8> {
-        self.input.get(self.pos)
-    }
-
-    fn get_num(&mut self) -> usize {
-        let mut num = Vec::<u8>::new();
-        while let Some(c) = self.current().filter(|x| x.is_ascii_digit()) {
-            num.push(*c);
-            self.next(1);
-        }
-
-        str::from_utf8(&num)
-            .expect("invalid utf8 number").to_string().parse::<usize>().expect("")
-    }
-
-    fn current_sub_string(&self) -> &[u8] {
-        &self.input[self.pos..self.input.len()]
+        _ => (Vec::new(), chars)
     }
 }
