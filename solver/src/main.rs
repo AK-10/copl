@@ -2,6 +2,7 @@ use std::env;
 
 use solver::tokenizer::tokenize;
 use solver::parser::parse;
+use solver::solver::solve;
 
 fn main() -> anyhow::Result<()> {
     let args = env::args().collect::<Vec<String>>();
@@ -9,8 +10,8 @@ fn main() -> anyhow::Result<()> {
     println!("* problem: {:?} *", problem);
     let tokens = tokenize(problem.as_bytes())?;
     println!("{:?}", tokens);
-    let ast = parse(tokens.as_slice());
-    println!("{:#?}", ast);
+    let ast = parse(tokens.as_slice())?;
+    solve(ast);
 
     Ok(())
 }
