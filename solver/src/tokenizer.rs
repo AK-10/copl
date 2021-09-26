@@ -21,7 +21,7 @@ pub enum Operator {
 
 #[derive(Debug)]
 pub enum Token {
-    Int(usize),
+    Int(isize),
     Bool(bool),
     Op(Operator),
     If,
@@ -75,12 +75,12 @@ fn new_token(token: Token, chars: &[u8]) -> anyhow::Result<Vec<Token>> {
     Ok(tokens)
 }
 
-fn get_num(chars: &[u8]) -> (usize, &[u8]) {
+fn get_num(chars: &[u8]) -> (isize, &[u8]) {
     let (num_str, rest) = get_num_str(chars);
     let num = str::from_utf8(&num_str)
         .expect("invalid utf8 number")
         .to_string()
-        .parse::<usize>()
+        .parse::<isize>()
         .unwrap();
 
     (num, rest)
