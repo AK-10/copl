@@ -10,7 +10,7 @@ fn main() -> anyhow::Result<()> {
     let tokens = tokenize(problem.as_bytes())?;
     println!("{:?}", tokens);
     let ast = parse(tokens.as_slice());
-    println!("{:?}", ast);
+    println!("{:#?}", ast);
 
     Ok(())
 }
