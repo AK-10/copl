@@ -71,6 +71,14 @@ fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     match tokens {
         [Token::Int(i), rest @ ..] => Ok((Expr::Value(Value::Int(*i)),rest)),
         [Token::Bool(i), rest @ ..] => Ok((Expr::Value(Value::Bool(*i)),rest)),
+        [Token::Sym(Sym::LParen), ..] => paren_expr(tokens),
+        [Token::If, ..] => if_then_else(tokens),
+        _ => expr(tokens)
+    }
+}
+
+fn paren_expr(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    match tokens {
         [Token::Sym(Sym::LParen), rest @ ..] => {
             let (expr, rest1) = expr(rest)?;
             if let [Token::Sym(Sym::RParen), rest2 @ ..] = rest1 {
@@ -78,8 +86,27 @@ fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
             } else {
                 Err(anyhow::anyhow!("')' not found"))
             }
-
         }
-        _ => expr(tokens)
+        _ => Err(anyhow::anyhow!("internal: unexpected invoke paren_expr"))
+    }
+}
+
+fn if_then_else(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    match tokens {
+        [Token::If, rest @ ..] => {
+            let (cond, rest1) = expr(rest)?;
+            if let [Token::Then, rest2 @ ..] = rest1 {
+                let (then, rest3) = expr(rest2)?;
+                if let [Token::Else, rest4 @ ..] = rest3 {
+                    let (els, rest5) = expr(rest4)?;
+                    Ok((Expr::IfThenElse(box cond, box then, box els), rest5))
+                } else {
+                    Err(anyhow::anyhow!("else section not found"))
+                }
+            } else {
+                Err(anyhow::anyhow!("then section not found"))
+            }
+        }
+        _ => Err(anyhow::anyhow!("internal: unexpected invoke if_then_else"))
     }
 }

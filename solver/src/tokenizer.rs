@@ -50,8 +50,7 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
             Ok(new_token(Token::Then, rest)?)
         }
         [b'e', b'l', b's', b'e', rest @ ..] => {
-            Ok(new_token(Token::Else, rest)?)
-        }
+            Ok(new_token(Token::Else, rest)?) }
         [b't', b'r', b'u', b'e', rest @ ..] => {
             Ok(new_token(Token::Bool(true), rest)?)
         }

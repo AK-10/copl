@@ -12,7 +12,18 @@ fn eval(expr: &Expr) -> Value {
                 Prim::Add(l, r) => Value::Int(eval(l) + eval(r)),
                 Prim::Sub(l, r) => Value::Int(eval(l) - eval(r)),
                 Prim::Mul(l, r) => Value::Int(eval(l) * eval(r)),
-                Prim::LessThan(l, r) => Value::Bool(eval(l) < eval(r))
+                Prim::LessThan(l, r) => Value::Bool(eval(l) < eval(r)),
+            }
+        }
+        Expr::IfThenElse(cond, then, els) => {
+            if let Value::Bool(b) = eval(cond) {
+                if b {
+                    eval(then)
+                } else {
+                    eval(els)
+                }
+            } else {
+                panic!("condition must be bool")
             }
         }
     }
@@ -51,7 +62,21 @@ fn apply_rule(expr: &Expr) {
             println!("{} evalto {} by E-Lt {{", expr, result);
             apply_rule(l);
             apply_rule(r);
-            println!("{} times {} is {} by B-Lt {{}};", eval(l), eval(r), result);
+            println!("{} less than {} is {} by B-Lt {{}};", eval(l), eval(r), result);
+            println!("}};");
+        }
+        Expr::IfThenElse(cond, then, els) => {
+            let result = eval(expr);
+            let cond_result = eval(cond);
+            if let Value::Bool(true) = cond_result {
+                println!("{} evalto {} by E-IfT {{", expr, result);
+                apply_rule(cond);
+                apply_rule(then);
+            } else {
+                println!("{} evalto {} by E-IfF {{", expr, result);
+                apply_rule(cond);
+                apply_rule(els);
+            }
             println!("}};");
         }
     }

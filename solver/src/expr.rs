@@ -66,7 +66,6 @@ impl cmp::PartialOrd for Value {
             _ => panic!("type error: < operator cannot apply int * bool")
         }
     }
-
 }
 
 #[derive(Debug)]
@@ -88,11 +87,12 @@ impl fmt::Display for Prim {
     }
 }
 
+
 #[derive(Debug)]
 pub enum Expr {
     Value(Value),
     Prim(Prim),
-    //IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
+    IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
 impl fmt::Display for Expr {
@@ -100,6 +100,7 @@ impl fmt::Display for Expr {
         match &self {
             Expr::Value(x) => write!(f, "{}", x),
             Expr::Prim(x) => write!(f, "{}", x),
+            Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els)
         }
     }
 }
