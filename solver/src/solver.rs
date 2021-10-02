@@ -12,6 +12,7 @@ fn eval(expr: &Expr) -> Value {
                 Prim::Add(l, r) => Value::Int(eval(l) + eval(r)),
                 Prim::Sub(l, r) => Value::Int(eval(l) - eval(r)),
                 Prim::Mul(l, r) => Value::Int(eval(l) * eval(r)),
+                Prim::LessThan(l, r) => Value::Bool(eval(l) < eval(r))
             }
         }
     }
@@ -45,6 +46,13 @@ fn apply_rule(expr: &Expr) {
             println!("{} times {} is {} by B-Times {{}};", eval(l), eval(r), result);
             println!("}};");
         }
-
+        Expr::Prim(Prim::LessThan(l, r)) => {
+            let result = eval(expr);
+            println!("{} evalto {} by E-Lt {{", expr, result);
+            apply_rule(l);
+            apply_rule(r);
+            println!("{} times {} is {} by B-Lt {{}};", eval(l), eval(r), result);
+            println!("}};");
+        }
     }
 }

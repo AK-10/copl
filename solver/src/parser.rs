@@ -10,7 +10,22 @@ pub fn parse(tokens: &[Token]) -> anyhow::Result<Expr> {
 }
 
 fn expr(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
-    op_arith1(tokens)
+    op_compare(tokens)
+}
+
+fn op_compare(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    let (mut left, mut rest) = op_arith1(tokens)?;
+    while !rest.is_empty() {
+        match rest {
+            [Token::Op(Operator::LessThan), rest1 @ ..] => {
+                let (right, rest2) = op_compare(rest1)?;
+                left = Expr::Prim(Prim::LessThan(box left, box right));
+                rest = rest2;
+            }
+            _ => return Ok((left, rest))
+        }
+    }
+    Ok((left, rest))
 }
 
 // 結合度が低いもの
