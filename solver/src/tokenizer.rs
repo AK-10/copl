@@ -5,7 +5,7 @@ use std::str;
 // i ∈ int
 // b ∈ {true, false}
 // v ∈ Value ::= i | b
-// e ∈ Exp ::= i | b | e op e | if e then e else e
+// e ∈ Exp ::= i | b | e op e | if e then e else e | (e)
 // op ∈ Prim ::= + | - | * | <
 
 // const OPERATORS: [&str; 4] = [
@@ -20,10 +20,17 @@ pub enum Operator {
 }
 
 #[derive(Debug)]
+pub enum Sym {
+    LParen,
+    RParen
+}
+
+#[derive(Debug)]
 pub enum Token {
     Int(isize),
     Bool(bool),
     Op(Operator),
+    Sym(Sym),
     If,
     Then,
     Else
@@ -62,6 +69,12 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         }
         [b'<', rest @ ..] => {
             Ok(new_token(Token::Op(Operator::LessThan), rest)?)
+        }
+        [b'(', rest @ ..] => {
+            Ok(new_token(Token::Sym(Sym::LParen), rest)?)
+        }
+        [b')', rest @ ..] => {
+            Ok(new_token(Token::Sym(Sym::RParen), rest)?)
         }
         [] => Ok(Vec::new()),
         x => Err(anyhow::anyhow!("unexpected token: {:?}", str::from_utf8(x).unwrap()))

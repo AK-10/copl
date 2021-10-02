@@ -27,7 +27,7 @@ fn apply_rule(expr: &Expr) {
             apply_rule(l);
             apply_rule(r);
             println!("{} plus {} is {} by B-Plus {{}};", eval(l), eval(r), result);
-            println!("}}");
+            println!("}};");
         }
         Expr::Prim(Prim::Sub(l, r)) => {
             let result = eval(expr);
@@ -37,7 +37,14 @@ fn apply_rule(expr: &Expr) {
             println!("{} minus {} is {} by B-Minus {{}};", eval(l), eval(r), result);
             println!("}};");
         }
-        _ => unimplemented!("prim mul not implemented")
+        Expr::Prim(Prim::Mul(l, r)) => {
+            let result = eval(expr);
+            println!("{} evalto {} by E-Times {{", expr, result);
+            apply_rule(l);
+            apply_rule(r);
+            println!("{} times {} is {} by B-Times {{}};", eval(l), eval(r), result);
+            println!("}};");
+        }
 
     }
 }

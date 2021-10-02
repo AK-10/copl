@@ -11,11 +11,11 @@ fn main() -> anyhow::Result<()> {
     println!("* problem: {:?} *", problem);
 
     let prob_tokens = tokenize(problem.as_bytes())?;
-    let prob_ast = parse(prob_tokens.as_slice())?;
+    //println!("{:?}", prob_tokens);
 
-    //let ans_tokens = tokenize(answer.as_bytes())?;
-    //let ans_ast = parse(ans_tokens.as_slice())?;
-    println!("{:#?}", prob_ast);
+    let prob_ast = parse(prob_tokens.as_slice())?;
+    //println!("{:#?}", prob_ast);
+
     solve(prob_ast);
 
     Ok(())

@@ -1,4 +1,4 @@
-use crate::tokenizer::{Token, Operator};
+use crate::tokenizer::{Token, Operator, Sym};
 use crate::expr::{Expr, Prim, Value};
 
 pub fn parse(tokens: &[Token]) -> anyhow::Result<Expr> {
@@ -56,6 +56,15 @@ fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     match tokens {
         [Token::Int(i), rest @ ..] => Ok((Expr::Value(Value::Int(*i)),rest)),
         [Token::Bool(i), rest @ ..] => Ok((Expr::Value(Value::Bool(*i)),rest)),
+        [Token::Sym(Sym::LParen), rest @ ..] => {
+            let (expr, rest1) = expr(rest)?;
+            if let [Token::Sym(Sym::RParen), rest2 @ ..] = rest1 {
+                Ok((expr, rest2))
+            } else {
+                Err(anyhow::anyhow!("')' not found"))
+            }
+
+        }
         _ => expr(tokens)
     }
 }
