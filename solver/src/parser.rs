@@ -1,5 +1,5 @@
 use crate::tokenizer::{Token, Operator, Sym};
-use crate::expr::{Expr, Prim, Value};
+use crate::expr::{Expr, Prim, Value, Unary};
 
 pub fn parse(tokens: &[Token]) -> anyhow::Result<Expr> {
     let (expr, rest) = expr(tokens)?;
@@ -52,11 +52,11 @@ fn op_arith1(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
 // 結合度が高いもの
 // *
 fn op_arith2(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
-    let (mut left, mut rest) = value(tokens)?;
+    let (mut left, mut rest) = unary(tokens)?;
     while !rest.is_empty() {
         match rest {
             [Token::Op(Operator::Mul), rest1 @ ..] => {
-                let (right, rest2) = value(rest1)?;
+                let (right, rest2) = unary(rest1)?;
                 left = Expr::Prim(Prim::Mul(box left, box right));
                 rest = rest2;
             },
@@ -65,6 +65,16 @@ fn op_arith2(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     }
 
     Ok((left, rest))
+}
+
+fn unary(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    match tokens {
+        [Token::Op(Operator::Minus), rest @ ..] => {
+            let (value, rest1) = value(rest)?;
+            Ok((Expr::Unary(Unary::Minus(box value)), rest1))
+        }
+        _ => value(tokens)
+    }
 }
 
 fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {

@@ -1,4 +1,4 @@
-use crate::expr::{Expr, Prim, Value};
+use crate::expr::{Expr, Prim, Value, Unary};
 
 pub fn solve(expr: Expr) {
     apply_rule(&expr);
@@ -7,6 +7,18 @@ pub fn solve(expr: Expr) {
 fn eval(expr: &Expr) -> Value {
     match expr {
         Expr::Value(x) => x.clone(),
+        Expr::Unary(x) => {
+            match x {
+                Unary::Minus(x) => {
+                    let result = eval(x);
+                    if let Value::Int(i) = result {
+                        Value::Int(-i)
+                    } else {
+                        panic!("`-` operator expected int")
+                    }
+                }
+            }
+        }
         Expr::Prim(p) => {
             match p {
                 Prim::Add(l, r) => Value::Int(eval(l) + eval(r)),
@@ -33,6 +45,7 @@ fn apply_rule(expr: &Expr) {
     match expr {
         Expr::Value(Value::Int(i)) => { println!("{} evalto {} by E-Int {{}};", i, eval(expr)); }
         Expr::Value(Value::Bool(b)) => { println!("{} evalto {} by E-Int {{}};", b, eval(expr)); }
+        Expr::Unary(Unary::Minus(x)) => { println!("{} evalto {} by E-Int {{}};", expr, eval(expr)); }
         Expr::Prim(Prim::Add(l, r)) => {
             let result = eval(expr);
             println!("{} evalto {} by E-Plus {{", expr, result);

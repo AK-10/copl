@@ -69,6 +69,19 @@ impl cmp::PartialOrd for Value {
 }
 
 #[derive(Debug)]
+pub enum Unary {
+    Minus(Box<Expr>)
+}
+
+impl fmt::Display for Unary {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Unary::Minus(i) => write!(f, "-{}", i),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Prim {
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
@@ -91,6 +104,7 @@ impl fmt::Display for Prim {
 #[derive(Debug)]
 pub enum Expr {
     Value(Value),
+    Unary(Unary),
     Prim(Prim),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
 }
@@ -99,6 +113,7 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Expr::Value(x) => write!(f, "{}", x),
+            Expr::Unary(x) => write!(f, "{}", x),
             Expr::Prim(x) => write!(f, "{}", x),
             Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els)
         }
