@@ -1,16 +1,5 @@
 use std::str;
 
-// BNF
-// EvalML1
-// i ∈ int
-// b ∈ {true, false}
-// v ∈ Value ::= i | b
-// e ∈ Exp ::= i | b | e op e | if e then e else e | (e)
-// op ∈ Prim ::= + | - | * | <
-
-// const OPERATORS: [&str; 4] = [
-//     "+","-", "*", "<"
-// ];
 #[derive(Debug)]
 pub enum Operator {
     Plus,

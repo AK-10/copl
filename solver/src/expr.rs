@@ -1,7 +1,4 @@
 use std::fmt;
-use std::ops;
-use std::cmp;
-use std::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -14,56 +11,6 @@ impl fmt::Display for Value {
         match &self {
             Value::Int(i) => write!(f, "{}", i),
             Value::Bool(b) => write!(f, "{}", b)
-        }
-    }
-}
-
-impl ops::Add<Value> for Value {
-    type Output = isize;
-    fn add(self, rhs: Value) -> isize {
-        match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => l + r,
-            _ => panic!("type error: `+` operator cannot int + bool")
-        }
-    }
-}
-
-impl ops::Sub<Value> for Value {
-    type Output = isize;
-    fn sub(self, rhs: Value) -> isize {
-        match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => l - r,
-            _ => panic!("type error: `-` operator cannot apply int - bool")
-        }
-    }
-}
-
-impl ops::Mul<Value> for Value {
-    type Output = isize;
-    fn mul(self, rhs: Value) -> isize {
-        match (self, rhs) {
-            (Value::Int(l), Value:: Int(r)) => l * r,
-            _ => panic!("type error: `*` operator cannot apply int * bool")
-        }
-    }
-}
-
-impl cmp::PartialEq<Value> for Value {
-    fn eq(&self, other: &Value) -> bool {
-        match (self, other) {
-            (Value::Int(l), Value::Int(r)) => *l == *r,
-            (Value::Bool(l), Value::Bool(r)) => *l == *r,
-            _ => panic!("type error: `==` operator cannot apply int * bool")
-        }
-    }
-}
-
-impl cmp::PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Value::Int(l), Value::Int(r)) => l.partial_cmp(r),
-            (Value::Bool(l), Value::Bool(r)) => l.partial_cmp(r),
-            _ => panic!("type error: < operator cannot apply int * bool")
         }
     }
 }
@@ -99,7 +46,6 @@ impl fmt::Display for Prim {
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum Expr {
