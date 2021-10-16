@@ -1,11 +1,35 @@
 use crate::tokenizer::{Token, Operator, Sym};
-use crate::expr::{Expr, Prim, Value, Unary};
+use crate::expr::{Expr, Prim, Value, Unary, Form, Env, Var};
 
-pub fn parse(tokens: &[Token]) -> anyhow::Result<Expr> {
-    let (expr, rest) = expr(tokens)?;
+pub fn parse(tokens: &[Token]) -> anyhow::Result<Form> {
+    let (form, rest) = form(tokens)?;
     match rest {
-        [] => Ok(expr),
+        [] => Ok(form),
         _ => Err(anyhow::anyhow!("syntax error"))
+    }
+}
+
+pub fn form(tokens: &[Token]) -> anyhow::Result<(Form, &[Token])> {
+    let (env, rest) = env(tokens)?;
+    let (expr, rest) = expr(rest)?;
+    Ok((Form(env, expr), rest))
+}
+
+pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
+    match tokens {
+        [Token::Var(name), Token::Op(Operator::Equal), rest @ ..] => {
+            let (expr, rest) = expr(rest)?;
+            let (next_env, rest) = env(rest)?;
+            Ok((Env::Some(Var(name.clone(), box expr), box next_env), rest))
+        }
+        [Token::Sym(Sym::Comma), rest @ ..] => {
+            env(rest)
+        }
+        [Token::Env, rest @ ..] => {
+            Ok((Env::Empty, rest))
+        }
+
+        _ => Err(anyhow::anyhow!("internal: unexpected token at env"))
     }
 }
 

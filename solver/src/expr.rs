@@ -16,11 +16,11 @@ impl fmt::Display for Value {
 }
 
 #[derive(Debug)]
-pub enum Unary {
-    Minus(Box<Expr>)
+pub enum Unary<'a> {
+    Minus(Box<Expr<'a>>)
 }
 
-impl fmt::Display for Unary {
+impl fmt::Display for Unary<'static> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Unary::Minus(i) => write!(f, "-{}", i),
@@ -29,14 +29,14 @@ impl fmt::Display for Unary {
 }
 
 #[derive(Debug)]
-pub enum Prim {
-    Add(Box<Expr>, Box<Expr>),
-    Sub(Box<Expr>, Box<Expr>),
-    Mul(Box<Expr>, Box<Expr>),
-    LessThan(Box<Expr>, Box<Expr>)
+pub enum Prim<'a> {
+    Add(Box<Expr<'a>>, Box<Expr<'a>>),
+    Sub(Box<Expr<'a>>, Box<Expr<'a>>),
+    Mul(Box<Expr<'a>>, Box<Expr<'a>>),
+    LessThan(Box<Expr<'a>>, Box<Expr<'a>>)
 }
 
-impl fmt::Display for Prim {
+impl fmt::Display for Prim<'static> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Prim::Add(l, r) => write!(f, "{} + {}", l, r),
@@ -47,21 +47,42 @@ impl fmt::Display for Prim {
     }
 }
 
+// example
+// x = 3, y = 2 |- x
+// Form(
+//   Env(Var(y, 2), Env(Var(x, 3), Empty)),
+//   Var(x)
+// )
+
 #[derive(Debug)]
-pub enum Expr {
-    Value(Value),
-    Unary(Unary),
-    Prim(Prim),
-    IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
+pub struct Form<'a>(pub Env<'a>, pub Expr<'a>);
+
+#[derive(Debug)]
+pub struct Var<'a>(pub String, pub Box<Expr<'a>>);
+
+#[derive(Debug)]
+pub enum Env<'a> {
+    Empty,
+    Some(Var<'a>, &'a Env<'a>)
 }
 
-impl fmt::Display for Expr {
+#[derive(Debug)]
+pub enum Expr<'a> {
+    Value(Value),
+    Unary(Unary<'a>),
+    Prim(Prim<'a>),
+    IfThenElse(Box<Expr<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
+    Var(&'a Var<'a>)
+}
+
+impl fmt::Display for Expr<'static> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Expr::Value(x) => write!(f, "{}", x),
             Expr::Unary(x) => write!(f, "{}", x),
             Expr::Prim(x) => write!(f, "{}", x),
-            Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els)
+            Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els),
+            Expr::Var(Var(name, value)) => write!(f, "{} = {}", name, value)
         }
     }
 }

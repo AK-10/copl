@@ -5,13 +5,15 @@ pub enum Operator {
     Plus,
     Minus,
     Mul,
-    LessThan
+    LessThan,
+    Equal,
 }
 
 #[derive(Debug)]
 pub enum Sym {
     LParen,
-    RParen
+    RParen,
+    Comma
 }
 
 #[derive(Debug)]
@@ -22,7 +24,10 @@ pub enum Token {
     Sym(Sym),
     If,
     Then,
-    Else
+    Else,
+    Var(String),
+    //Evalto,
+    Env
 }
 
 pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
@@ -64,6 +69,22 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         [b')', rest @ ..] => {
             Ok(new_token(Token::Sym(Sym::RParen), rest)?)
         }
+        [b'=', rest @ ..] => {
+            Ok(new_token(Token::Op(Operator::Equal), rest)?)
+        }
+        [b',', rest @ ..] => {
+            Ok(new_token(Token::Sym(Sym::Comma), rest)?)
+        }
+        [b'_' | b'a'..=b'z', ..] => {
+            let (var, rest) = get_var(chars);
+            Ok(new_token(Token::Var(var), rest)?)
+        }
+        //[b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
+        //    Ok(new_token(Token::EvalTo, rest)?)
+        //}
+        [b'|', b'-', rest @ ..] => {
+            Ok(new_token(Token::Env, rest)?)
+        }
         [] => Ok(Vec::new()),
         x => Err(anyhow::anyhow!("unexpected token: {:?}", str::from_utf8(x).unwrap()))
     }
@@ -85,6 +106,24 @@ fn get_num(chars: &[u8]) -> (isize, &[u8]) {
         .unwrap();
 
     (num, rest)
+}
+
+fn get_var(chars: &[u8]) -> (String, &[u8]) {
+    let (var_str, rest) = get_var_str(chars);
+
+    (String::from_utf8(var_str).expect("invalid utf8 var character"), rest)
+}
+
+fn get_var_str(chars: &[u8]) -> (Vec<u8>, &[u8]) {
+    match chars {
+        [first @ (b'_' | b'a'..=b'z' | b'A'..=b'Z' | b'\''), rest @ ..] => {
+            let mut var =vec![*first];
+            let (mut rest_var, rest) = get_var_str(rest);
+            var.append(&mut rest_var);
+            (var, rest)
+        }
+        _ => (Vec::new(), chars)
+    }
 }
 
 fn get_num_str(chars: &[u8]) -> (Vec<u8>, &[u8]) {
