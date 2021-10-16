@@ -1,5 +1,5 @@
 use crate::tokenizer::{Token, Operator, Sym};
-use crate::expr::{Expr, Prim, Value, Unary, Form, Env, Var};
+use crate::expr::{Expr, Prim, Value, Unary, Form, Env, EnvVar};
 
 pub fn parse(tokens: &[Token]) -> anyhow::Result<Form> {
     let (form, rest) = form(tokens)?;
@@ -11,8 +11,8 @@ pub fn parse(tokens: &[Token]) -> anyhow::Result<Form> {
 
 pub fn form(tokens: &[Token]) -> anyhow::Result<(Form, &[Token])> {
     let (env, rest) = env(tokens)?;
-    let (expr, rest) = expr(rest)?;
-    Ok((Form(env, expr), rest))
+    let (exp, rest) = expr(rest)?;
+    Ok((Form(env, exp), rest))
 }
 
 pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
@@ -20,7 +20,7 @@ pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
         [Token::Var(name), Token::Op(Operator::Equal), rest @ ..] => {
             let (expr, rest) = expr(rest)?;
             let (next_env, rest) = env(rest)?;
-            Ok((Env::Some(Var(name.clone(), box expr), box next_env), rest))
+            Ok((Env::Some(EnvVar(name, box expr), box next_env), rest))
         }
         [Token::Sym(Sym::Comma), rest @ ..] => {
             env(rest)
@@ -28,7 +28,6 @@ pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
         [Token::Env, rest @ ..] => {
             Ok((Env::Empty, rest))
         }
-
         _ => Err(anyhow::anyhow!("internal: unexpected token at env"))
     }
 }
@@ -103,11 +102,12 @@ fn unary(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
 
 fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     match tokens {
-        [Token::Int(i), rest @ ..] => Ok((Expr::Value(Value::Int(*i)),rest)),
-        [Token::Bool(i), rest @ ..] => Ok((Expr::Value(Value::Bool(*i)),rest)),
+        [Token::Int(i), rest @ ..] => Ok((Expr::Value(Value::Int(*i)), rest)),
+        [Token::Bool(i), rest @ ..] => Ok((Expr::Value(Value::Bool(*i)), rest)),
         [Token::Sym(Sym::LParen), ..] => paren_expr(tokens),
         [Token::If, ..] => if_then_else(tokens),
-        _ => expr(tokens)
+        [Token::Var(x), rest @ ..] => Ok((Expr::Ident(x), rest)),
+        _ => unimplemented!("unsupported token")
     }
 }
 

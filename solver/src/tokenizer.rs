@@ -32,8 +32,7 @@ pub enum Token {
 
 pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
     match chars {
-        [first, rest @ ..] if first.is_ascii_whitespace() => tokenize(rest),
-        [b'1'..=b'9', _rest @ ..] => {
+        [b'1'..=b'9', ..] => {
             let (num, rest) = get_num(chars);
             Ok(new_token(Token::Int(num), rest)?)
         }
@@ -75,16 +74,17 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         [b',', rest @ ..] => {
             Ok(new_token(Token::Sym(Sym::Comma), rest)?)
         }
+        //[b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
+        //    Ok(new_token(Token::Evalto, rest)?)
+        //}
         [b'_' | b'a'..=b'z', ..] => {
             let (var, rest) = get_var(chars);
             Ok(new_token(Token::Var(var), rest)?)
         }
-        //[b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
-        //    Ok(new_token(Token::EvalTo, rest)?)
-        //}
         [b'|', b'-', rest @ ..] => {
             Ok(new_token(Token::Env, rest)?)
         }
+        [first, rest @ ..] if first.is_ascii_whitespace() => tokenize(rest),
         [] => Ok(Vec::new()),
         x => Err(anyhow::anyhow!("unexpected token: {:?}", str::from_utf8(x).unwrap()))
     }

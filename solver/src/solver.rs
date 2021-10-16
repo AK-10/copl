@@ -1,4 +1,6 @@
-use crate::expr::{Expr, Prim, Value, Unary};
+// TODO: 全部書き直す
+
+use crate::expr::{Expr, Prim, Value, Unary, EnvVar, Env, Form};
 
 use std::fmt;
 use std::ops;
@@ -138,22 +140,31 @@ impl ops::Neg for EvalResult {
     }
 }
 
-pub fn solve(expr: Expr) {
-    apply_rule(&expr);
+pub fn solve(form: &Form) {
+    let env = &form.0;
+    let expr = &form.1;
+    apply_rule(env, expr);
 }
 
-fn eval(expr: &Expr) -> EvalResult {
+fn eval(env: &Env, expr: &Expr) -> EvalResult {
     match expr {
         Expr::Value(x) => EvalResult::Value(x.clone()),
-        Expr::Unary(_) => -eval(expr),
+        Expr::Unary(_) => -eval(env, expr),
+        Expr::Ident(name) => {
+            match get_env_var(env, name) {
+                Some(e) => EvalResult::Value(e.clone()),
+                None => EvalResult::Err(EvalError::Unknown) // env var not found
+
+            }
+        }
         Expr::Prim(p) => {
             match p {
-                Prim::Add(l, r) => eval(l) + eval(r),
-                Prim::Sub(l, r) => eval(l) - eval(r),
-                Prim::Mul(l, r) => eval(l) * eval(r),
+                Prim::Add(l, r) => eval(env, l) + eval(env, r),
+                Prim::Sub(l, r) => eval(env, l) - eval(env, r),
+                Prim::Mul(l, r) => eval(env, l) * eval(env, r),
                 Prim::LessThan(l, r) => {
-                    let l = eval(l);
-                    let r = eval(r);
+                    let l = eval(env, l);
+                    let r = eval(env, r);
                     match (l, r) {
                         (EvalResult::Value(Value::Int(l)), EvalResult::Value(Value::Int(r))) =>
                             EvalResult::Value(Value::Bool(l < r)),
@@ -166,15 +177,15 @@ fn eval(expr: &Expr) -> EvalResult {
             }
         }
         Expr::IfThenElse(cond, then, els) => {
-            match eval(cond) {
+            match eval(env, cond) {
                 EvalResult::Value(Value::Bool(b)) => {
                     if b {
-                        match eval(then) {
+                        match eval(env, then) {
                             EvalResult::Err(_) => EvalResult::Err(EvalError::IfTError),
                             res => res
                         }
                     } else {
-                        match eval(els) {
+                        match eval(env, els) {
                             EvalResult::Err(_) => EvalResult::Err(EvalError::IfTError),
                             res => res
                         }
@@ -187,108 +198,108 @@ fn eval(expr: &Expr) -> EvalResult {
     }
 }
 
-fn apply_rule(expr: &Expr) {
-    match (expr, eval(expr)) {
+fn apply_rule(env: &Env, expr: &Expr) {
+    match (expr, eval(env, expr)) {
         (Expr::Value(Value::Int(i)), res) => println!("{} evalto {} by E-Int {{}};", i, res),
         (Expr::Value(Value::Bool(b)), res) => println!("{} evalto {} by E-Bool {{}};", b, res),
         (Expr::Unary(Unary::Minus(_)), res) => println!("{} evalto {} by E-Int {{}};", expr, res),
         (Expr::Prim(Prim::Add(l, r)), EvalResult::Value(v)) => {
             println!("{} evalto {} by E-Plus {{", expr, v);
-            apply_rule(l);
-            apply_rule(r);
-            println!("{} plus {} is {} by B-Plus {{}};", eval(l), eval(r), v);
+            apply_rule(env, l);
+            apply_rule(env, r);
+            println!("{} plus {} is {} by B-Plus {{}};", eval(env, l), eval(env, r), v);
             println!("}};");
         }
         (Expr::Prim(Prim::Add(l, r)), EvalResult::Err(e)) => {
             println!("{} evalto {} by {} {{", expr, "error", e);
             match e {
-                EvalError::PlusBoolL => apply_rule(l),
-                EvalError::PlusBoolR => apply_rule(r),
-                EvalError::PlusErrorL => apply_rule(l),
-                EvalError::PlusErrorR => apply_rule(r),
+                EvalError::PlusBoolL => apply_rule(env, l),
+                EvalError::PlusBoolR => apply_rule(env, r),
+                EvalError::PlusErrorL => apply_rule(env, l),
+                EvalError::PlusErrorR => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Add")
             }
             println!("}};");
         }
         (Expr::Prim(Prim::Sub(l, r)), EvalResult::Value(v)) => {
             println!("{} evalto {} by E-Minus {{", expr, v);
-            apply_rule(l);
-            apply_rule(r);
-            println!("{} minus {} is {} by B-Minus {{}};", eval(l), eval(r), v);
+            apply_rule(env, l);
+            apply_rule(env, r);
+            println!("{} minus {} is {} by B-Minus {{}};", eval(env, l), eval(env, r), v);
             println!("}};");
         }
         (Expr::Prim(Prim::Sub(l, r)), EvalResult::Err(e)) => {
             println!("{} evalto {} by {} {{", expr, "error", e);
             match e {
-                EvalError::MinusBoolL => apply_rule(l),
-                EvalError::MinusBoolR => apply_rule(r),
-                EvalError::MinusErrorL => apply_rule(l),
-                EvalError::MinusErrorR => apply_rule(r),
+                EvalError::MinusBoolL => apply_rule(env, l),
+                EvalError::MinusBoolR => apply_rule(env, r),
+                EvalError::MinusErrorL => apply_rule(env, l),
+                EvalError::MinusErrorR => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Sub")
             }
             println!("}};");
         }
         (Expr::Prim(Prim::Mul(l, r)), EvalResult::Value(v)) => {
             println!("{} evalto {} by E-Times {{", expr, v);
-            apply_rule(l);
-            apply_rule(r);
-            println!("{} times {} is {} by B-Times {{}};", eval(l), eval(r), v);
+            apply_rule(env, l);
+            apply_rule(env, r);
+            println!("{} times {} is {} by B-Times {{}};", eval(env, l), eval(env, r), v);
             println!("}};");
         }
         (Expr::Prim(Prim::Mul(l, r)), EvalResult::Err(e)) => {
             println!("{} evalto {} by {} {{", expr, "error", e);
             match e {
-                EvalError::TimesBoolL => apply_rule(l),
-                EvalError::TimesBoolR => apply_rule(r),
-                EvalError::TimesErrorL => apply_rule(l),
-                EvalError::TimesErrorR => apply_rule(r),
+                EvalError::TimesBoolL => apply_rule(env, l),
+                EvalError::TimesBoolR => apply_rule(env, r),
+                EvalError::TimesErrorL => apply_rule(env, l),
+                EvalError::TimesErrorR => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Mul")
             }
             println!("}};");
         }
         (Expr::Prim(Prim::LessThan(l, r)), EvalResult::Value(v)) => {
             println!("{} evalto {} by E-Lt {{", expr, v);
-            apply_rule(l);
-            apply_rule(r);
-            println!("{} less than {} is {} by B-Lt {{}};", eval(l), eval(r), v);
+            apply_rule(env, l);
+            apply_rule(env, r);
+            println!("{} less than {} is {} by B-Lt {{}};", eval(env, l), eval(env, r), v);
             println!("}};");
         }
         (Expr::Prim(Prim::LessThan(l, r)), EvalResult::Err(e)) => {
             println!("{} evalto {} by {} {{", expr, "error", e);
             match e {
-                EvalError::LtBoolL => apply_rule(l),
-                EvalError::LtBoolR => apply_rule(r),
-                EvalError::LtErrorL => apply_rule(l),
-                EvalError::LtErrorR => apply_rule(r),
+                EvalError::LtBoolL => apply_rule(env, l),
+                EvalError::LtBoolR => apply_rule(env, r),
+                EvalError::LtErrorL => apply_rule(env, l),
+                EvalError::LtErrorR => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Lt")
             }
             println!("}};");
         }
         (Expr::IfThenElse(cond, then, els), EvalResult::Value(v)) => {
-            let cond_result = eval(cond);
+            let cond_result = eval(env, cond);
             if let EvalResult::Value(Value::Bool(true)) = cond_result {
                 println!("{} evalto {} by E-IfT {{", expr, v);
-                apply_rule(cond);
-                apply_rule(then);
+                apply_rule(env, cond);
+                apply_rule(env, then);
             } else {
                 println!("{} evalto {} by E-IfF {{", expr, v);
-                apply_rule(cond);
-                apply_rule(els);
+                apply_rule(env, cond);
+                apply_rule(env, els);
             }
             println!("}};");
         }
         (Expr::IfThenElse(cond, then, els), EvalResult::Err(e)) => {
             println!("{} evalto {} by {} {{", expr, "error", e);
             match e {
-                EvalError::IfError => apply_rule(cond),
-                EvalError::IfInt => apply_rule(cond),
+                EvalError::IfError => apply_rule(env, cond),
+                EvalError::IfInt => apply_rule(env, cond),
                 EvalError::IfTError => {
-                    apply_rule(cond);
-                    apply_rule(then);
+                    apply_rule(env, cond);
+                    apply_rule(env, then);
                 }
                 EvalError::IfFError => {
-                    apply_rule(cond);
-                    apply_rule(els);
+                    apply_rule(env, cond);
+                    apply_rule(env, els);
                 }
                 _ => {
                     println!("{:?}", e);
@@ -296,6 +307,29 @@ fn apply_rule(expr: &Expr) {
                 }
             }
             println!("}};");
+        }
+        (Expr::Ident(name), EvalResult::Value(x)) => {
+        }
+        (Expr::Ident(name), EvalResult::Err(e)) => {
+        }
+    }
+}
+
+fn get_env_var<'a>(env: &'a Env, name: &'a String) -> Option<&'a Value> {
+    match env {
+        Env::Some(EnvVar(n, val), next) => {
+            if let Expr::Value(x) = val.as_ref() {
+                if *n == name {
+                    Some(&x)
+                } else {
+                    get_env_var(next, name)
+                }
+            } else {
+                get_env_var(next, name)
+            }
+        }
+        Env::Empty => {
+            None
         }
     }
 }

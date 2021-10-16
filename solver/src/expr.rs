@@ -20,7 +20,7 @@ pub enum Unary<'a> {
     Minus(Box<Expr<'a>>)
 }
 
-impl fmt::Display for Unary<'static> {
+impl<'a> fmt::Display for Unary<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Unary::Minus(i) => write!(f, "-{}", i),
@@ -36,7 +36,7 @@ pub enum Prim<'a> {
     LessThan(Box<Expr<'a>>, Box<Expr<'a>>)
 }
 
-impl fmt::Display for Prim<'static> {
+impl<'a> fmt::Display for Prim<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Prim::Add(l, r) => write!(f, "{} + {}", l, r),
@@ -58,12 +58,12 @@ impl fmt::Display for Prim<'static> {
 pub struct Form<'a>(pub Env<'a>, pub Expr<'a>);
 
 #[derive(Debug)]
-pub struct Var<'a>(pub String, pub Box<Expr<'a>>);
+pub struct EnvVar<'a>(pub &'a String, pub Box<Expr<'a>>);
 
 #[derive(Debug)]
 pub enum Env<'a> {
     Empty,
-    Some(Var<'a>, &'a Env<'a>)
+    Some(EnvVar<'a>, Box<Env<'a>>)
 }
 
 #[derive(Debug)]
@@ -72,17 +72,17 @@ pub enum Expr<'a> {
     Unary(Unary<'a>),
     Prim(Prim<'a>),
     IfThenElse(Box<Expr<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
-    Var(&'a Var<'a>)
+    Ident(&'a String)
 }
 
-impl fmt::Display for Expr<'static> {
+impl<'a> fmt::Display for Expr<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Expr::Value(x) => write!(f, "{}", x),
             Expr::Unary(x) => write!(f, "{}", x),
             Expr::Prim(x) => write!(f, "{}", x),
             Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els),
-            Expr::Var(Var(name, value)) => write!(f, "{} = {}", name, value)
+            Expr::Ident(name) => write!(f, "{}", name)
         }
     }
 }
