@@ -1,5 +1,3 @@
-// TODO: 全部書き直す
-
 use crate::expr::{Expr, Prim, Value, Unary, EnvVar, Env, Form};
 
 use std::fmt;
@@ -152,9 +150,8 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
         Expr::Unary(_) => -eval(env, expr),
         Expr::Ident(name) => {
             match get_env_var(env, name) {
-                Some(e) => EvalResult::Value(e.clone()),
+                Some(v) => EvalResult::Value(v.clone()),
                 None => EvalResult::Err(EvalError::Unknown) // env var not found
-
             }
         }
         Expr::Prim(p) => {
@@ -199,118 +196,109 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
 }
 
 fn apply_rule(env: &Env, expr: &Expr) {
-    match (expr, eval(env, expr)) {
-        (Expr::Value(Value::Int(i)), res) => println!("{} evalto {} by E-Int {{}};", i, res),
-        (Expr::Value(Value::Bool(b)), res) => println!("{} evalto {} by E-Bool {{}};", b, res),
-        (Expr::Unary(Unary::Minus(_)), res) => println!("{} evalto {} by E-Int {{}};", expr, res),
-        (Expr::Prim(Prim::Add(l, r)), EvalResult::Value(v)) => {
-            println!("{} evalto {} by E-Plus {{", expr, v);
-            apply_rule(env, l);
-            apply_rule(env, r);
-            println!("{} plus {} is {} by B-Plus {{}};", eval(env, l), eval(env, r), v);
-            println!("}};");
-        }
-        (Expr::Prim(Prim::Add(l, r)), EvalResult::Err(e)) => {
-            println!("{} evalto {} by {} {{", expr, "error", e);
-            match e {
-                EvalError::PlusBoolL => apply_rule(env, l),
-                EvalError::PlusBoolR => apply_rule(env, r),
-                EvalError::PlusErrorL => apply_rule(env, l),
-                EvalError::PlusErrorR => apply_rule(env, r),
+    let evaled = eval(env, expr);
+    match expr {
+        Expr::Value(Value::Int(i)) => println!("{} evalto {} by E-Int {{}};", i, i),
+        Expr::Value(Value::Bool(b)) => println!("{} evalto {} by E-Bool {{}};", b, b),
+        Expr::Unary(Unary::Minus(_)) => println!("{} evalto {} by E-Int {{}};", expr, evaled),
+        Expr::Prim(Prim::Add(l, r)) => {
+            let evaled = eval(env, expr);
+            println!("{} evalto {} by E-Plus {{", expr, evaled);
+            match evaled {
+                EvalResult::Value(v) => {
+                    apply_rule(env, l);
+                    apply_rule(env, r);
+                    println!("{} plus {} is {} by B-Plus {{}};", eval(env, l), eval(env, r), v);
+                }
+                EvalResult::Err(EvalError::PlusBoolL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::PlusBoolR) => apply_rule(env, r),
+                EvalResult::Err(EvalError::PlusErrorL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::PlusErrorR) => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Add")
             }
             println!("}};");
         }
-        (Expr::Prim(Prim::Sub(l, r)), EvalResult::Value(v)) => {
-            println!("{} evalto {} by E-Minus {{", expr, v);
-            apply_rule(env, l);
-            apply_rule(env, r);
-            println!("{} minus {} is {} by B-Minus {{}};", eval(env, l), eval(env, r), v);
-            println!("}};");
-        }
-        (Expr::Prim(Prim::Sub(l, r)), EvalResult::Err(e)) => {
-            println!("{} evalto {} by {} {{", expr, "error", e);
-            match e {
-                EvalError::MinusBoolL => apply_rule(env, l),
-                EvalError::MinusBoolR => apply_rule(env, r),
-                EvalError::MinusErrorL => apply_rule(env, l),
-                EvalError::MinusErrorR => apply_rule(env, r),
-                _ => unreachable!("internal: unreachable point apply_rule: Sub")
+        Expr::Prim(Prim::Sub(l, r)) => {
+            println!("{} evalto {} by E-Minus {{", expr, evaled);
+                match evaled {
+                EvalResult::Value(v) => {
+                    apply_rule(env, l);
+                    apply_rule(env, r);
+                    println!("{} minus {} is {} by B-Minus {{}};", eval(env, l), eval(env, r), v);
+                }
+                EvalResult::Err(EvalError::MinusBoolL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::MinusBoolR) => apply_rule(env, r),
+                EvalResult::Err(EvalError::MinusErrorL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::MinusErrorR) => apply_rule(env, r),
+                _ => unreachable!("internal: unreachable point apply_rule: Minus")
             }
             println!("}};");
         }
-        (Expr::Prim(Prim::Mul(l, r)), EvalResult::Value(v)) => {
-            println!("{} evalto {} by E-Times {{", expr, v);
-            apply_rule(env, l);
-            apply_rule(env, r);
-            println!("{} times {} is {} by B-Times {{}};", eval(env, l), eval(env, r), v);
-            println!("}};");
-        }
-        (Expr::Prim(Prim::Mul(l, r)), EvalResult::Err(e)) => {
-            println!("{} evalto {} by {} {{", expr, "error", e);
-            match e {
-                EvalError::TimesBoolL => apply_rule(env, l),
-                EvalError::TimesBoolR => apply_rule(env, r),
-                EvalError::TimesErrorL => apply_rule(env, l),
-                EvalError::TimesErrorR => apply_rule(env, r),
-                _ => unreachable!("internal: unreachable point apply_rule: Mul")
+        Expr::Prim(Prim::Mul(l, r)) => {
+            match evaled {
+                EvalResult::Value(v) => {
+                    apply_rule(env, l);
+                    apply_rule(env, r);
+                    println!("{} times {} is {} by B-Times {{}};", eval(env, l), eval(env, r), v);
+                }
+                EvalResult::Err(EvalError::TimesBoolL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::TimesBoolR) => apply_rule(env, r),
+                EvalResult::Err(EvalError::TimesErrorL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::TimesErrorR) => apply_rule(env, r),
+                _ => unreachable!("internal: unreachable point apply_rule: Times")
             }
             println!("}};");
         }
-        (Expr::Prim(Prim::LessThan(l, r)), EvalResult::Value(v)) => {
-            println!("{} evalto {} by E-Lt {{", expr, v);
-            apply_rule(env, l);
-            apply_rule(env, r);
-            println!("{} less than {} is {} by B-Lt {{}};", eval(env, l), eval(env, r), v);
-            println!("}};");
-        }
-        (Expr::Prim(Prim::LessThan(l, r)), EvalResult::Err(e)) => {
-            println!("{} evalto {} by {} {{", expr, "error", e);
-            match e {
-                EvalError::LtBoolL => apply_rule(env, l),
-                EvalError::LtBoolR => apply_rule(env, r),
-                EvalError::LtErrorL => apply_rule(env, l),
-                EvalError::LtErrorR => apply_rule(env, r),
+        Expr::Prim(Prim::LessThan(l, r)) => {
+            println!("{} evalto {} by E-Lt {{", expr, evaled);
+            match evaled {
+                EvalResult::Value(v) => {
+                    apply_rule(env, l);
+                    apply_rule(env, r);
+                    println!("{} less than {} is {} by B-Lt {{}};", eval(env, l), eval(env, r), v);
+                }
+                EvalResult::Err(EvalError::LtBoolL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::LtBoolR) => apply_rule(env, r),
+                EvalResult::Err(EvalError::LtErrorL) => apply_rule(env, l),
+                EvalResult::Err(EvalError::LtErrorR) => apply_rule(env, r),
                 _ => unreachable!("internal: unreachable point apply_rule: Lt")
             }
             println!("}};");
         }
-        (Expr::IfThenElse(cond, then, els), EvalResult::Value(v)) => {
-            let cond_result = eval(env, cond);
-            if let EvalResult::Value(Value::Bool(true)) = cond_result {
-                println!("{} evalto {} by E-IfT {{", expr, v);
-                apply_rule(env, cond);
-                apply_rule(env, then);
-            } else {
-                println!("{} evalto {} by E-IfF {{", expr, v);
-                apply_rule(env, cond);
-                apply_rule(env, els);
-            }
-            println!("}};");
-        }
-        (Expr::IfThenElse(cond, then, els), EvalResult::Err(e)) => {
-            println!("{} evalto {} by {} {{", expr, "error", e);
-            match e {
-                EvalError::IfError => apply_rule(env, cond),
-                EvalError::IfInt => apply_rule(env, cond),
-                EvalError::IfTError => {
+        Expr::IfThenElse(cond, then, els) => {
+            match evaled {
+                EvalResult::Value(v) => {
+                    let cond_result = eval(env, cond);
+                    if let EvalResult::Value(Value::Bool(true)) = cond_result {
+                        println!("{} evalto {} by E-IfT {{", expr, v);
+                        apply_rule(env, cond);
+                        apply_rule(env, then);
+                    } else {
+                        println!("{} evalto {} by E-IfF {{", expr, v);
+                        apply_rule(env, cond);
+                        apply_rule(env, els);
+                    }
+                }
+                EvalResult::Err(EvalError::IfError) => apply_rule(env, cond),
+                EvalResult::Err(EvalError::IfInt) => apply_rule(env, cond),
+                EvalResult::Err(EvalError::IfTError) => {
                     apply_rule(env, cond);
                     apply_rule(env, then);
                 }
-                EvalError::IfFError => {
+                EvalResult::Err(EvalError::IfFError) => {
                     apply_rule(env, cond);
                     apply_rule(env, els);
                 }
-                _ => {
-                    println!("{:?}", e);
-                    unreachable!("internal: unreachable point apply_rule: IfThenElse")
-                }
+                _ => unreachable!("internal: unreachable point apply_rule: IfThenElse")
             }
+
             println!("}};");
         }
-        (Expr::Ident(name), EvalResult::Value(x)) => {
-        }
-        (Expr::Ident(name), EvalResult::Err(e)) => {
+        Expr::Ident(name) => {
+            match evaled {
+                EvalResult::Value(v) => println!("{} = {} |- {} evalto {} by E-Var1 {{}}", name, v, name, v),
+                _ => unimplemented!("unimplemented ident errors")
+            }
         }
     }
 }

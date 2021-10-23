@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, fs::write};
 
 #[derive(Debug, Clone)]
 pub enum Value {
