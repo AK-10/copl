@@ -5,17 +5,27 @@ pub fn parse(tokens: &[Token]) -> anyhow::Result<Form> {
     let (form, rest) = form(tokens)?;
     match rest {
         [] => Ok(form),
-        _ => Err(anyhow::anyhow!("syntax error"))
+        _ => {
+            Err(anyhow::anyhow!("syntax error"))
+        }
     }
 }
 
-pub fn form(tokens: &[Token]) -> anyhow::Result<(Form, &[Token])> {
+fn form(tokens: &[Token]) -> anyhow::Result<(Form, &[Token])> {
     let (env, rest) = env(tokens)?;
     let (exp, rest) = expr(rest)?;
-    Ok((Form(env, exp), rest))
+    let (evaled, rest) = evalto(rest)?;
+    Ok((Form(env, exp, evaled), rest))
 }
 
-pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
+fn evalto(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    match tokens {
+        [Token::Evalto, rest @ ..] => expr(rest),
+        _ => Err(anyhow::anyhow!("internal: unexpected token at evalto"))
+    }
+}
+
+fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
     match tokens {
         [Token::Var(name), Token::Op(Operator::Equal), rest @ ..] => {
             let (expr, rest) = expr(rest)?;
@@ -32,6 +42,7 @@ pub fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
     }
 }
 
+
 fn expr(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     op_compare(tokens)
 }
@@ -39,6 +50,9 @@ fn expr(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
 fn op_compare(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     let (mut left, mut rest) = op_arith1(tokens)?;
     while !rest.is_empty() {
+        if let [Token::Evalto, ..] = rest {
+            return Ok((left, rest))
+        }
         match rest {
             [Token::Op(Operator::LessThan), rest1 @ ..] => {
                 let (right, rest2) = op_compare(rest1)?;
@@ -56,6 +70,9 @@ fn op_compare(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
 fn op_arith1(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     let (mut left, mut rest) = op_arith2(tokens)?;
     while !rest.is_empty() {
+        if let [Token::Evalto, ..] = rest {
+            return Ok((left, rest))
+        }
         match rest {
             [Token::Op(Operator::Plus), rest1 @ ..] => {
                 let (right, rest2) = op_arith2(rest1)?;
@@ -77,6 +94,10 @@ fn op_arith1(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
 fn op_arith2(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     let (mut left, mut rest) = unary(tokens)?;
     while !rest.is_empty() {
+        if let [Token::Evalto, ..] = rest {
+            return Ok((left, rest))
+        }
+
         match rest {
             [Token::Op(Operator::Mul), rest1 @ ..] => {
                 let (right, rest2) = unary(rest1)?;

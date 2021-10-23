@@ -1,6 +1,6 @@
 use std::str;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Operator {
     Plus,
     Minus,
@@ -9,14 +9,14 @@ pub enum Operator {
     Equal,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Sym {
     LParen,
     RParen,
     Comma
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Int(isize),
     Bool(bool),
@@ -26,7 +26,7 @@ pub enum Token {
     Then,
     Else,
     Var(String),
-    //Evalto,
+    Evalto,
     Env
 }
 
@@ -74,9 +74,9 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         [b',', rest @ ..] => {
             Ok(new_token(Token::Sym(Sym::Comma), rest)?)
         }
-        //[b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
-        //    Ok(new_token(Token::Evalto, rest)?)
-        //}
+        [b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
+            Ok(new_token(Token::Evalto, rest)?)
+        }
         [b'_' | b'a'..=b'z', ..] => {
             let (var, rest) = get_var(chars);
             Ok(new_token(Token::Var(var), rest)?)

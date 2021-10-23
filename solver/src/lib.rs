@@ -4,3 +4,4 @@ pub mod tokenizer;
 pub mod expr;
 pub mod parser;
 pub mod solver;
+pub mod solver2;

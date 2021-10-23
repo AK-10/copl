@@ -52,10 +52,11 @@ impl<'a> fmt::Display for Prim<'a> {
 // Form(
 //   Env(Var(y, 2), Env(Var(x, 3), Empty)),
 //   Var(x)
+//   Value(Int(3))
 // )
 
 #[derive(Debug)]
-pub struct Form<'a>(pub Env<'a>, pub Expr<'a>);
+pub struct Form<'a>(pub Env<'a>, pub Expr<'a>, pub Expr<'a>);
 
 #[derive(Debug)]
 pub struct EnvVar<'a>(pub &'a String, pub Box<Expr<'a>>);
