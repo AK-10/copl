@@ -296,7 +296,20 @@ fn apply_rule(env: &Env, expr: &Expr) {
         }
         Expr::Ident(name) => {
             match evaled {
-                EvalResult::Value(v) => println!("{} = {} |- {} evalto {} by E-Var1 {{}}", name, v, name, v),
+                EvalResult::Value(v) => {
+                    match env.0.first() {
+                        Some(EnvVar(n, _)) => {
+                            if n == name {
+                                println!("{} {} evalto {} by E-Var1 {{}}", env.form_while(name), name, v);
+                            } else {
+                                println!("{} {} evalto {} by E-Var2 {{", env.form(), name, v);
+                                apply_rule(&Env(env.0[1..env.0.len()].to_vec()), expr);
+                                println!("}}");
+                            }
+                        }
+                        None => unreachable!("solver Ident: unreachable")
+                    }
+                }
                 _ => unimplemented!("unimplemented ident errors")
             }
         }
@@ -304,20 +317,13 @@ fn apply_rule(env: &Env, expr: &Expr) {
 }
 
 fn get_env_var<'a>(env: &'a Env, name: &'a String) -> Option<&'a Value> {
-    match env {
-        Env::Some(EnvVar(n, val), next) => {
-            if let Expr::Value(x) = val.as_ref() {
-                if *n == name {
-                    Some(&x)
-                } else {
-                    get_env_var(next, name)
-                }
-            } else {
-                get_env_var(next, name)
+    for e in &env.0 {
+        if e.0 == name {
+            if let Expr::Value(x) = e.1.as_ref() {
+                return Some(x)
             }
         }
-        Env::Empty => {
-            None
-        }
     }
+
+    None
 }

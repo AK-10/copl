@@ -15,7 +15,8 @@ fn form(tokens: &[Token]) -> anyhow::Result<(Form, &[Token])> {
     let (env, rest) = env(tokens)?;
     let (exp, rest) = expr(rest)?;
     let (evaled, rest) = evalto(rest)?;
-    Ok((Form(env, exp, evaled), rest))
+
+    Ok((Form(Env(env), exp, evaled), rest))
 }
 
 fn evalto(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
@@ -25,18 +26,21 @@ fn evalto(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     }
 }
 
-fn env(tokens: &[Token]) -> anyhow::Result<(Env, &[Token])> {
+fn env(tokens: &[Token]) -> anyhow::Result<(Vec<EnvVar>, &[Token])> {
     match tokens {
         [Token::Var(name), Token::Op(Operator::Equal), rest @ ..] => {
             let (expr, rest) = expr(rest)?;
-            let (next_env, rest) = env(rest)?;
-            Ok((Env::Some(EnvVar(name, box expr), box next_env), rest))
+            let (mut env, rest) = env(rest)?;
+            let mut cur = vec![EnvVar(name, box expr)];
+            env.append(&mut cur);
+
+            Ok((env, rest))
         }
         [Token::Sym(Sym::Comma), rest @ ..] => {
             env(rest)
         }
         [Token::Env, rest @ ..] => {
-            Ok((Env::Empty, rest))
+            Ok((Vec::<EnvVar>::new(), rest))
         }
         _ => Err(anyhow::anyhow!("internal: unexpected token at env"))
     }

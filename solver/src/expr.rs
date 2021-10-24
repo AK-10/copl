@@ -1,4 +1,4 @@
-use std::{fmt, fs::write};
+use std::fmt::{self, Write};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -15,7 +15,7 @@ impl fmt::Display for Value {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Unary<'a> {
     Minus(Box<Expr<'a>>)
 }
@@ -28,7 +28,7 @@ impl<'a> fmt::Display for Unary<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Prim<'a> {
     Add(Box<Expr<'a>>, Box<Expr<'a>>),
     Sub(Box<Expr<'a>>, Box<Expr<'a>>),
@@ -58,16 +58,44 @@ impl<'a> fmt::Display for Prim<'a> {
 #[derive(Debug)]
 pub struct Form<'a>(pub Env<'a>, pub Expr<'a>, pub Expr<'a>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnvVar<'a>(pub &'a String, pub Box<Expr<'a>>);
 
 #[derive(Debug)]
-pub enum Env<'a> {
-    Empty,
-    Some(EnvVar<'a>, Box<Env<'a>>)
+pub struct Env<'a>(pub Vec<EnvVar<'a>>);
+
+impl<'a> Env<'a> {
+    pub fn form(&self) -> String {
+        let mut buf = String::new();
+        for (i, e) in self.0.iter().enumerate().rev() {
+            write!(buf, "{} = {}", e.0, e.1).unwrap();
+            if i != 0 {
+                write!(buf, ", ").unwrap();
+            }
+        }
+        write!(buf, " |-").unwrap();
+
+        buf
+    }
+
+    pub fn form_while(&self, name: &'a String) -> String {
+        let mut buf = String::new();
+        for (i, e) in self.0.iter().enumerate().rev() {
+            write!(buf, "{} = {}", e.0, e.1).unwrap();
+            if e.0 == name {
+                write!(buf, " |-").unwrap();
+                return buf
+            }
+            if i != 0 {
+                write!(buf, ", ").unwrap();
+            }
+        }
+        write!(buf, " |-").unwrap();
+        buf
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr<'a> {
     Value(Value),
     Unary(Unary<'a>),
