@@ -198,12 +198,12 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
 fn apply_rule(env: &Env, expr: &Expr) {
     let evaled = eval(env, expr);
     match expr {
-        Expr::Value(Value::Int(i)) => println!("{} evalto {} by E-Int {{}};", i, i),
-        Expr::Value(Value::Bool(b)) => println!("{} evalto {} by E-Bool {{}};", b, b),
-        Expr::Unary(Unary::Minus(_)) => println!("{} evalto {} by E-Int {{}};", expr, evaled),
+        Expr::Value(Value::Int(i)) => println!("{} {} evalto {} by E-Int {{}};", env.form(), i, i),
+        Expr::Value(Value::Bool(b)) => println!("{} {} evalto {} by E-Bool {{}};", env.form(), b, b),
+        Expr::Unary(Unary::Minus(_)) => println!("{} {} evalto {} by E-Int {{}};", env.form(), expr, evaled),
         Expr::Prim(Prim::Add(l, r)) => {
             let evaled = eval(env, expr);
-            println!("{} evalto {} by E-Plus {{", expr, evaled);
+            println!("{} {} evalto {} by E-Plus {{", env.form(), expr, evaled);
             match evaled {
                 EvalResult::Value(v) => {
                     apply_rule(env, l);
@@ -219,7 +219,7 @@ fn apply_rule(env: &Env, expr: &Expr) {
             println!("}};");
         }
         Expr::Prim(Prim::Sub(l, r)) => {
-            println!("{} evalto {} by E-Minus {{", expr, evaled);
+            println!("{} {} evalto {} by E-Minus {{", env.form(), expr, evaled);
                 match evaled {
                 EvalResult::Value(v) => {
                     apply_rule(env, l);
@@ -250,7 +250,7 @@ fn apply_rule(env: &Env, expr: &Expr) {
             println!("}};");
         }
         Expr::Prim(Prim::LessThan(l, r)) => {
-            println!("{} evalto {} by E-Lt {{", expr, evaled);
+            println!("{} {} evalto {} by E-Lt {{", env.form(), expr, evaled);
             match evaled {
                 EvalResult::Value(v) => {
                     apply_rule(env, l);
@@ -270,11 +270,11 @@ fn apply_rule(env: &Env, expr: &Expr) {
                 EvalResult::Value(v) => {
                     let cond_result = eval(env, cond);
                     if let EvalResult::Value(Value::Bool(true)) = cond_result {
-                        println!("{} evalto {} by E-IfT {{", expr, v);
+                        println!("{} {} evalto {} by E-IfT {{", env.form(), expr, v);
                         apply_rule(env, cond);
                         apply_rule(env, then);
                     } else {
-                        println!("{} evalto {} by E-IfF {{", expr, v);
+                        println!("{} {} evalto {} by E-IfF {{", env.form(), expr, v);
                         apply_rule(env, cond);
                         apply_rule(env, els);
                     }
@@ -300,11 +300,11 @@ fn apply_rule(env: &Env, expr: &Expr) {
                     match env.0.first() {
                         Some(EnvVar(n, _)) => {
                             if n == name {
-                                println!("{} {} evalto {} by E-Var1 {{}}", env.form_while(name), name, v);
+                                println!("{} {} evalto {} by E-Var1 {{}};", env.form_while(name), name, v);
                             } else {
                                 println!("{} {} evalto {} by E-Var2 {{", env.form(), name, v);
                                 apply_rule(&Env(env.0[1..env.0.len()].to_vec()), expr);
-                                println!("}}");
+                                println!("}};");
                             }
                         }
                         None => unreachable!("solver Ident: unreachable")
