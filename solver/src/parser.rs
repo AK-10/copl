@@ -174,13 +174,12 @@ fn let_in(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     match tokens {
         [Token::Let, Token::Var(x), Token::Op(Operator::Equal), rest @ ..] => {
             let (var_exp, rest) = expr(rest)?;
-            let env_var = EnvVar(x, box var_exp);
             let (exp, rest) =
                 match rest {
                     [Token::In, rest @ ..] => expr(rest)?,
                     _ => unreachable!("parser: unreachable point at in on let_in")
                 };
-            Ok((Expr::Let(Env(vec![env_var]), box exp), rest))
+            Ok((Expr::Let(x, box var_exp, box exp), rest))
         }
         _ => unreachable!("parser: unreachable point at let on let_in")
     }

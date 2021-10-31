@@ -194,7 +194,17 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
                 e @ EvalResult::Err(_) => e
             }
         }
-        Expr::Let(_, _) => unimplemented!("eval `let` is unimplemented")
+        Expr::Let(var, var_exp, expr) => {
+            let var_exp_evaled = eval(env, var_exp);
+            if let EvalResult::Value(v) = var_exp_evaled {
+                let val = Expr::Value(v);
+                let new_env = Env(vec![EnvVar(var, box val)]);
+                eval(&new_env.appended(env), expr)
+            } else {
+                EvalResult::Err(EvalError::Unknown)
+            }
+
+        }
     }
 }
 
@@ -238,6 +248,7 @@ fn apply_rule(env: &Env, expr: &Expr) {
             println!("}};");
         }
         Expr::Prim(Prim::Mul(l, r)) => {
+            println!("{} {} evalto {} by E-Times {{", env.form(), expr, evaled);
             match evaled {
                 EvalResult::Value(v) => {
                     apply_rule(env, l);
@@ -316,7 +327,25 @@ fn apply_rule(env: &Env, expr: &Expr) {
                 _ => unimplemented!("unimplemented ident errors")
             }
         }
-        Expr::Let(_, _) => unimplemented!("apply_rule `let` is unimplemented")
+        Expr::Let(var, var_exp, exp) => {
+            println!("{} {} evalto {} by E-Let {{", env.form(), expr, evaled);
+            match evaled {
+                EvalResult::Value(_) => {
+                    apply_rule(env, var_exp);
+                    let var_exp_evaled = eval(env, var_exp);
+                    if let EvalResult::Value(v) = var_exp_evaled {
+                        let val = Expr::Value(v);
+                        let new_env = Env(vec![EnvVar(var, box val)]);
+                        let new_env = new_env.appended(env);
+                        apply_rule(&new_env, exp)
+                    } else {
+                        println!("unexpected var_exp")
+                    }
+                }
+                _ => unimplemented!("unimplemented let errors")
+            }
+            println!("}};");
+        }
     }
 }
 

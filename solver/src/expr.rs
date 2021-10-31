@@ -93,6 +93,13 @@ impl<'a> Env<'a> {
         write!(buf, " |-").unwrap();
         buf
     }
+
+    pub fn appended(&self, other: &'a Env) -> Env {
+        let mut vars = self.0.clone();
+        vars.append(&mut other.0.clone());
+
+        Env(vars)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -102,7 +109,7 @@ pub enum Expr<'a> {
     Prim(Prim<'a>),
     IfThenElse(Box<Expr<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
     Ident(&'a String),
-    Let(Env<'a>, Box<Expr<'a>>)
+    Let(&'a String, Box<Expr<'a>>, Box<Expr<'a>>)
 }
 
 impl<'a> fmt::Display for Expr<'a> {
@@ -113,7 +120,7 @@ impl<'a> fmt::Display for Expr<'a> {
             Expr::Prim(x) => write!(f, "{}", x),
             Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els),
             Expr::Ident(name) => write!(f, "{}", name),
-            Expr::Let(env, expr) => write!(f, "{} {}", env.form(), expr)
+            Expr::Let(var, var_exp, expr) => write!(f, "let {} = {} in {}", var, var_exp, expr)
         }
     }
 }
