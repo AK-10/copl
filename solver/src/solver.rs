@@ -7,9 +7,11 @@ use std::ops;
 // EvalML1
 // i ∈ int
 // b ∈ {true, false}
+// x, y ∈ Var
 // v ∈ Value ::= i | b
+// ε ∈ ∅ | ε , x = v
 // r ∈ Res ::= v | error
-// e ∈ Exp ::= i | b | e op e | if e then e else e | (e)
+// e ∈ Exp ::= i | b | e op e | if e then e else e | (e) | let x = e in e
 // op ∈ Prim ::= + | - | * | <
 
 // const OPERATORS: [&str; 4] = [
@@ -192,6 +194,7 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
                 e @ EvalResult::Err(_) => e
             }
         }
+        Expr::Let(_, _) => unimplemented!("eval `let` is unimplemented")
     }
 }
 
@@ -313,6 +316,7 @@ fn apply_rule(env: &Env, expr: &Expr) {
                 _ => unimplemented!("unimplemented ident errors")
             }
         }
+        Expr::Let(_, _) => unimplemented!("apply_rule `let` is unimplemented")
     }
 }
 

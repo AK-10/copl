@@ -27,7 +27,9 @@ pub enum Token {
     Else,
     Var(String),
     Evalto,
-    Env
+    Env,
+    Let,
+    In
 }
 
 pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
@@ -77,6 +79,12 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         [b'e', b'v', b'a', b'l', b't', b'o', rest @ ..] => {
             Ok(new_token(Token::Evalto, rest)?)
         }
+        [b'l', b'e', b't', rest @ ..] => {
+            Ok(new_token(Token::Let, rest)?)
+        }
+        [b'i', b'n', rest @ ..] => {
+            Ok(new_token(Token::In, rest)?)
+        }
         [b'_' | b'a'..=b'z', ..] => {
             let (var, rest) = get_var(chars);
             Ok(new_token(Token::Var(var), rest)?)
@@ -84,6 +92,7 @@ pub fn tokenize<'a>(chars: &'a [u8]) -> anyhow::Result<Vec<Token>> {
         [b'|', b'-', rest @ ..] => {
             Ok(new_token(Token::Env, rest)?)
         }
+
         [first, rest @ ..] if first.is_ascii_whitespace() => tokenize(rest),
         [] => Ok(Vec::new()),
         x => Err(anyhow::anyhow!("unexpected token: {:?}", str::from_utf8(x).unwrap()))

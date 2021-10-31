@@ -61,7 +61,7 @@ pub struct Form<'a>(pub Env<'a>, pub Expr<'a>, pub Expr<'a>);
 #[derive(Debug, Clone)]
 pub struct EnvVar<'a>(pub &'a String, pub Box<Expr<'a>>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Env<'a>(pub Vec<EnvVar<'a>>);
 
 impl<'a> Env<'a> {
@@ -101,7 +101,8 @@ pub enum Expr<'a> {
     Unary(Unary<'a>),
     Prim(Prim<'a>),
     IfThenElse(Box<Expr<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
-    Ident(&'a String)
+    Ident(&'a String),
+    Let(Env<'a>, Box<Expr<'a>>)
 }
 
 impl<'a> fmt::Display for Expr<'a> {
@@ -111,7 +112,8 @@ impl<'a> fmt::Display for Expr<'a> {
             Expr::Unary(x) => write!(f, "{}", x),
             Expr::Prim(x) => write!(f, "{}", x),
             Expr::IfThenElse(cond, then, els) => write!(f, "if {} then {} else {}", *cond, *then, *els),
-            Expr::Ident(name) => write!(f, "{}", name)
+            Expr::Ident(name) => write!(f, "{}", name),
+            Expr::Let(env, expr) => write!(f, "{} {}", env.form(), expr)
         }
     }
 }

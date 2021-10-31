@@ -46,7 +46,6 @@ fn env(tokens: &[Token]) -> anyhow::Result<(Vec<EnvVar>, &[Token])> {
     }
 }
 
-
 fn expr(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
     op_compare(tokens)
 }
@@ -132,6 +131,7 @@ fn value(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
         [Token::Sym(Sym::LParen), ..] => paren_expr(tokens),
         [Token::If, ..] => if_then_else(tokens),
         [Token::Var(x), rest @ ..] => Ok((Expr::Ident(x), rest)),
+        [Token::Let, ..] => let_in(tokens),
         _ => unimplemented!("unsupported token")
     }
 }
@@ -167,5 +167,21 @@ fn if_then_else(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
             }
         }
         _ => Err(anyhow::anyhow!("internal: unexpected invoke if_then_else"))
+    }
+}
+
+fn let_in(tokens: &[Token]) -> anyhow::Result<(Expr, &[Token])> {
+    match tokens {
+        [Token::Let, Token::Var(x), Token::Op(Operator::Equal), rest @ ..] => {
+            let (var_exp, rest) = expr(rest)?;
+            let env_var = EnvVar(x, box var_exp);
+            let (exp, rest) =
+                match rest {
+                    [Token::In, rest @ ..] => expr(rest)?,
+                    _ => unreachable!("parser: unreachable point at in on let_in")
+                };
+            Ok((Expr::Let(Env(vec![env_var]), box exp), rest))
+        }
+        _ => unreachable!("parser: unreachable point at let on let_in")
     }
 }
