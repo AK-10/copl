@@ -78,22 +78,6 @@ impl<'a> Env<'a> {
         buf
     }
 
-    pub fn form_while(&self, name: &'a String) -> String {
-        let mut buf = String::new();
-        for (i, e) in self.0.iter().enumerate().rev() {
-            write!(buf, "{} = {}", e.0, e.1).unwrap();
-            if e.0 == name {
-                write!(buf, " |-").unwrap();
-                return buf
-            }
-            if i != 0 {
-                write!(buf, ", ").unwrap();
-            }
-        }
-        write!(buf, " |-").unwrap();
-        buf
-    }
-
     pub fn appended(&self, other: &'a Env) -> Env {
         let mut vars = self.0.clone();
         vars.append(&mut other.0.clone());

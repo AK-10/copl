@@ -209,6 +209,7 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
 }
 
 fn apply_rule(env: &Env, expr: &Expr) {
+    println!("{:?}", env);
     let evaled = eval(env, expr);
     match expr {
         Expr::Value(Value::Int(i)) => println!("{} {} evalto {} by E-Int {{}};", env.form(), i, i),
@@ -314,7 +315,7 @@ fn apply_rule(env: &Env, expr: &Expr) {
                     match env.0.first() {
                         Some(EnvVar(n, _)) => {
                             if n == name {
-                                println!("{} {} evalto {} by E-Var1 {{}};", env.form_while(name), name, v);
+                                println!("{} {} evalto {} by E-Var1 {{}};", env.form(), name, v);
                             } else {
                                 println!("{} {} evalto {} by E-Var2 {{", env.form(), name, v);
                                 apply_rule(&Env(env.0[1..env.0.len()].to_vec()), expr);
