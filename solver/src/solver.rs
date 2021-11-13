@@ -56,7 +56,9 @@ pub enum EvalError {
     LtErrorL,
     LtErrorR,
     UnaryMinusBool,
-    Unknown
+    LetError1,
+    LetError2,
+    VarErr
 }
 
 impl fmt::Display for EvalError {
@@ -83,7 +85,9 @@ impl fmt::Display for EvalError {
             EvalError::LtErrorL => write!(f, "E-LtErrorL"),
             EvalError::LtErrorR => write!(f, "E-LtErrorR"),
             EvalError::UnaryMinusBool => write!(f, "E-UnaryMinusBool"),
-            EvalError::Unknown => write!(f, "E-PlusBoolL"),
+            EvalError::LetError1 => write!(f, "E-LetError1"),
+            EvalError::LetError2 => write!(f, "E-LetError2"),
+            EvalError::VarErr => write!(f, "E-VarErr")
         }
     }
 }
@@ -153,7 +157,7 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
         Expr::Ident(name) => {
             match get_env_var(env, name) {
                 Some(v) => EvalResult::Value(v.clone()),
-                None => EvalResult::Err(EvalError::Unknown) // env var not found
+                None => EvalResult::Err(EvalError::VarErr) // env var not found
             }
         }
         Expr::Prim(p) => {
@@ -196,14 +200,20 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
         }
         Expr::Let(var, var_exp, expr) => {
             let var_exp_evaled = eval(env, var_exp);
-            if let EvalResult::Value(v) = var_exp_evaled {
-                let val = Expr::Value(v);
-                let new_env = Env(vec![EnvVar(var, box val)]);
-                eval(&new_env.appended(env), expr)
-            } else {
-                EvalResult::Err(EvalError::Unknown)
+            match var_exp_evaled {
+                EvalResult::Value(v) => {
+                    let val = Expr::Value(v);
+                    let new_env = Env(vec![EnvVar(var, box val)]);
+                    if let result @ EvalResult::Value(_) = eval(&new_env.appended(env), expr) {
+                        result
+                    } else {
+                        EvalResult::Err(EvalError::LetError2)
+                    }
+                }
+                EvalResult::Err(_) => {
+                    EvalResult::Err(EvalError::LetError1)
+                }
             }
-
         }
     }
 }
