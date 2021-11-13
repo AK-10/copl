@@ -209,7 +209,6 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
 }
 
 fn apply_rule(env: &Env, expr: &Expr) {
-    println!("{:?}", env);
     let evaled = eval(env, expr);
     match expr {
         Expr::Value(Value::Int(i)) => println!("{} {} evalto {} by E-Int {{}};", env.form(), i, i),
