@@ -56,7 +56,7 @@ impl<'a> fmt::Display for Prim<'a> {
 // )
 
 #[derive(Debug)]
-pub struct Form<'a>(pub Env<'a>, pub Expr<'a>, pub Expr<'a>);
+pub struct Form<'a>(pub Env<'a>, pub Expr<'a>);
 
 #[derive(Debug, Clone)]
 pub struct EnvVar<'a>(pub &'a String, pub Box<Expr<'a>>);
