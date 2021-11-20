@@ -181,6 +181,7 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
         }
         Expr::IfThenElse(cond, then, els) => {
             match eval(env, cond) {
+                EvalResult::Value(Value::Int(_)) => EvalResult::Err(EvalError::IfInt),
                 EvalResult::Value(Value::Bool(b)) => {
                     if b {
                         match eval(env, then) {
@@ -194,7 +195,6 @@ fn eval(env: &Env, expr: &Expr) -> EvalResult {
                         }
                     }
                 }
-                EvalResult::Value(Value::Int(_)) => EvalResult::Err(EvalError::IfInt),
                 e @ EvalResult::Err(_) => e
             }
         }
@@ -304,12 +304,17 @@ fn apply_rule(env: &Env, expr: &Expr) {
                     }
                 }
                 EvalResult::Err(EvalError::IfError) => apply_rule(env, cond),
-                EvalResult::Err(EvalError::IfInt) => apply_rule(env, cond),
+                EvalResult::Err(EvalError::IfInt) => {
+                    println!("{} {} evalto {} by E-IfInt {{", env.form(), expr, evaled);
+                    apply_rule(env, cond);
+                },
                 EvalResult::Err(EvalError::IfTError) => {
+                    println!("{} {} evalto {} by E-IfT {{", env.form(), expr, evaled);
                     apply_rule(env, cond);
                     apply_rule(env, then);
                 }
                 EvalResult::Err(EvalError::IfFError) => {
+                    println!("{} {} evalto {} by E-IfF {{", env.form(), expr, evaled);
                     apply_rule(env, cond);
                     apply_rule(env, els);
                 }

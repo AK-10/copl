@@ -13,24 +13,24 @@ fn main() -> anyhow::Result<()> {
         println!("cargo run -- '<env>' '<expr>'\n");
 
         println!("example:");
-        println!("cargo run -- 'x = 10, y = true' 'if x then y + 1 else y - 1'");
+        println!("cargo run -- 'x = true, y = 4' 'if x then y + 1 else y - 1'");
 
         return Ok(())
     }
 
     let env = args.get(1).expect("expect env");
     let expr = args.get(2).expect("expect expression");
-    println!("* env: {:?} *", env);
-    println!("* expr: {:?} *", expr);
+    //println!("* env: {:?} *", env);
+    //println!("* expr: {:?} *", expr);
 
     let env = tokenize(env.as_bytes())?;
     let expr = tokenize(expr.as_bytes())?;
 
-    println!("{:?}", env);
-    println!("{:?}", expr);
+    //println!("{:?}", env);
+    //println!("{:?}", expr);
 
     let ast = parse(env.as_slice(), expr.as_slice())?;
-    println!("{:#?}", ast);
+    //println!("{:#?}", ast);
 
     solve(&ast);
 
